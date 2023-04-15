@@ -3,7 +3,7 @@
 const sharp = require('sharp');
 const fs = require('fs');
 
-const CONTAINER_URL = '/api/containers/';
+const CONTAINER_URL = '/api/ImageFiles/';
 
 module.exports = function(PostImage) {
     // routes actual function
@@ -16,13 +16,21 @@ module.exports = function(PostImage) {
             fs.mkdirSync('./server/storage/' + ctx.req.params.container);
         }
 
+        PostImage.find({where: {postId: post_id}}, (fer, files) => {
+            if(!fer && files) {
+                files.map(fil => {
+                    fil.updateAttributes({postId: null});
+                })
+            }
+        })
+
         PostImage.app.models.ImageFile.upload(ctx.req,ctx.result, options, (err, file) => {
             if(err) {
                 cb(err);
             } else {
                 var fileInfo = file.files.file[0];
 
-                sharp('./server/storage/' + ctx.req.params.container, + '/' + fileInfo.name)
+                sharp('./server/storage/' + ctx.req.params.container + '/' + fileInfo.name)
                 .resize(100) // thumbnail size
                 .toFile('./server/storage/' + ctx.req.params.container + '/100-' + fileInfo.name, (err) => {
                     if(!err) {
@@ -36,7 +44,7 @@ module.exports = function(PostImage) {
                             if(err2){
                                 cb(err2);
                             } else {
-                                cb(bull, image);
+                                cb(null, image);
                             }
                         });
                     }
